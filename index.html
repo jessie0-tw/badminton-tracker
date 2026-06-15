@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="球友記錄">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#F5F3EE">
+<meta name="description" content="打完球，趁還記得，快速記下對手的資訊與感受">
+<title>球友記錄 🏸</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%2310B981'/%3E%3Ctext x='50' y='68' font-size='54' text-anchor='middle'%3E🏸%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%2310B981'/%3E%3Ctext x='50' y='68' font-size='54' text-anchor='middle'%3E🏸%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<style>
+/* ═══════════════════════════════════════════════════
+   DESIGN TOKENS — Warm Light
+═══════════════════════════════════════════════════ */
+:root {
+  color-scheme: light;
+
+  /* Brand — 自然森綠 */
+  --brand:        #2F7A52;
+  --brand-glow:   #2F7A5228;
+  --brand-dim:    #235E3E;
+  --brand-soft:   #E4F3EB;
+
+  /* Surfaces — 溫暖奶白 */
+  --bg:           #F5F3EE;
+  --surface:      #FFFFFF;
+  --surface-2:    #F0EDE6;
+  --surface-3:    #E8E4DC;
+  --glass:        rgba(255,255,255,0.88);
+  --glass-border: rgba(0,0,0,0.07);
+
+  /* Text — 暖灰黑 */
+  --text:         #1C1C1E;
+  --text-sec:     #5C5C66;
+  --text-tert:    #AEAEB2;
+
+  /* Border — 柔和 */
+  --border:       rgba(0,0,0,0.10);
+  --border-soft:  rgba(0,0,0,0.06);
+
+  /* Danger */
+  --danger:       #D93025;
+  --danger-soft:  #FDECEA;
+
+  /* Warning */
+  --warn:         #F59E0B;
+  --warn-soft:    #FEF3C7;
+
+  /* Shadows */
+  --shadow-sm:    0 1px 4px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:    0 4px 16px rgba(0,0,0,0.09), 0 2px 6px rgba(0,0,0,0.05);
+  --shadow-lg:    0 20px 48px rgba(0,0,0,0.13), 0 8px 20px rgba(0,0,0,0.07);
+  --shadow-brand: 0 4px 14px rgba(47,122,82,0.22);
+
+  /* Radii */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-full: 9999px;
+
+  /* Motion */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --dur-fast: 0.15s;
+  --dur-med:  0.28s;
+  --dur-slow: 0.42s;
+
+  /* Layout */
+  --font: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --nav-h: 72px;
+  --header-h: 60px;
+}
+
+/* ═══════════════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════════════ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0; padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+html, body { height: 100%; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+  padding-top: env(safe-area-inset-top);
+}
+
+/* ═══════════════════════════════════════════════════
+   VIEW TRANSITIONS
+═══════════════════════════════════════════════════ */
+::view-transition-group(root) { animation: var(--dur-med) var(--ease-smooth) both; }
+@keyframes slide-to-left   { to   { transform: translateX(-30%); opacity: 0; } }
+@keyframes slide-from-right { from { transform: translateX(30%);  opacity: 0; } }
+@keyframes slide-to-right  { to   { transform: translateX(30%);  opacity: 0; } }
+@keyframes slide-from-left { from { transform: translateX(-30%); opacity: 0; } }
+
+html:active-view-transition-type(forward)::view-transition-old(root)  { animation-name: slide-to-left; }
+html:active-view-transition-type(forward)::view-transition-new(root)  { animation-name: slide-from-right; }
+html:active-view-transition-type(backward)::view-transition-old(root) { animation-name: slide-to-right; }
+html:active-view-transition-type(backward)::view-transition-new(root) { animation-name: slide-from-left; }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(root) { animation: none !important; }
+}
+
+/* ═══════════════════════════════════════════════════
+   APP SHELL
+═══════════════════════════════════════════════════ */
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ── Header ── */
+header.appbar {
+  height: var(--header-h);
+  padding: 0 20px;
+  background: var(--glass);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--glass-border);
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: var(--shadow-sm);
+}
+.appbar-left { display: flex; align-items: center; gap: 10px; }
+.appbar-logo {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--brand), var(--brand-dim));
+  border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  box-shadow: var(--shadow-brand);
+  flex-shrink: 0;
+}
+.appbar-title {
+  font-size: 17px; font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.appbar-sub {
+  font-size: 11px; color: var(--text-tert);
+  letter-spacing: 0.01em;
+  margin-top: 1px;
+}
+.sync-pill {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  font-size: 11px; font-weight: 500; color: var(--text-tert);
+  transition: all var(--dur-med);
+}
+.sync-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text-tert);
+  transition: background var(--dur-med);
+  flex-shrink: 0;
+}
+.sync-dot.synced  { background: var(--brand); box-shadow: 0 0 6px var(--brand); }
+.sync-dot.syncing { background: var(--warn); animation: pulse-sync 1s infinite; }
+.sync-dot.error   { background: var(--danger); }
+@keyframes pulse-sync { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+/* ── Bottom Nav ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 480px;
+  height: calc(var(--nav-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--glass);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border-top: 1px solid var(--glass-border);
+  display: flex; align-items: flex-start; justify-content: space-around;
+  padding-top: 8px;
+  z-index: 50;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.08);
+}
+.nav-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 4px;
+  padding: 8px 4px; cursor: pointer;
+  border: none; background: none;
+  color: var(--text-tert);
+  font-family: var(--font);
+  font-size: 10px; font-weight: 500;
+  letter-spacing: 0.03em;
+  transition: color var(--dur-fast);
+  position: relative;
+}
+.nav-item.active { color: var(--brand); }
+.nav-icon {
+  width: 42px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-lg);
+  font-size: 22px;
+  transition: background var(--dur-med), transform var(--dur-fast) var(--ease-spring);
+}
+.nav-item.active .nav-icon {
+  background: var(--brand-soft);
+  transform: scale(1.08);
+}
+.nav-badge {
+  position: absolute; top: 4px; right: calc(50% - 26px);
+  background: var(--brand);
+  color: #fff;
+  font-size: 9px; font-weight: 700;
+  min-width: 16px; height: 16px;
+  border-radius: var(--r-full);
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 4px;
+  border: 2px solid var(--bg);
+}
+
+/* ── Main ── */
+main {
+  flex: 1;
+  padding: 16px 16px calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px);
+  overflow-x: hidden;
+}
+
+/* ── Sections ── */
+.section { display: none; }
+.section.active { display: block; }
+
+/* ═══════════════════════════════════════════════════
+   FORM ELEMENTS
+═══════════════════════════════════════════════════ */
+.field-group { margin-top: 20px; }
+.field-label {
+  display: block;
+  font-size: 12px; font-weight: 600;
+  color: var(--text-sec);
+  margin-bottom: 8px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+input[type="text"], textarea {
+  width: 100%;
+  padding: 13px 16px;
+  font-size: 15px;
+  font-family: var(--font);
+  border: 1.5px solid var(--border-soft);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+  outline: none;
+}
+input[type="text"]:focus, textarea:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-glow);
+}
+input[type="text"]::placeholder, textarea::placeholder { color: var(--text-tert); }
+textarea { resize: vertical; min-height: 56px; }
+
+/* ═══════════════════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════════════════ */
+.btn {
+  width: 100%; padding: 14px 20px;
+  font-size: 14px; font-weight: 600;
+  font-family: var(--font);
+  border: 1.5px solid var(--border-soft);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  margin-top: 10px;
+  transition: transform var(--dur-fast) var(--ease-spring),
+              box-shadow var(--dur-fast),
+              background var(--dur-fast);
+  -webkit-user-select: none; user-select: none;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary {
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dim) 100%);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: var(--shadow-brand);
+}
+.btn-primary:hover { box-shadow: 0 6px 24px rgba(16,185,129,0.4); }
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-sec);
+  font-weight: 500;
+}
+.btn-danger {
+  background: var(--danger-soft);
+  border-color: transparent;
+  color: var(--danger);
+}
+
+/* ═══════════════════════════════════════════════════
+   CHIPS
+═══════════════════════════════════════════════════ */
+.chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.chip {
+  font-size: 13px; font-weight: 500;
+  padding: 8px 15px;
+  border-radius: var(--r-full);
+  border: 1.5px solid var(--border-soft);
+  cursor: pointer;
+  color: var(--text-sec);
+  background: var(--surface);
+  transition: all var(--dur-fast) var(--ease-spring);
+  -webkit-user-select: none; user-select: none;
+  white-space: nowrap;
+}
+.chip:active { transform: scale(0.95); }
+.chip.sel {
+  border-color: transparent;
+  font-weight: 700;
+  transform: scale(1.02);
+}
+
+/* Chip color variants */
+.chip.blue.sel   { background: #DBEAFE; color: #1D4ED8; box-shadow: 0 2px 8px rgba(59,130,246,0.15); }
+.chip.teal.sel   { background: #D1F5E4; color: #1A5E3A; box-shadow: 0 2px 8px rgba(47,122,82,0.18); }
+.chip.amber.sel  { background: #FEF3C7; color: #92400E; box-shadow: 0 2px 8px rgba(245,158,11,0.15); }
+.chip.coral.sel  { background: #FFE4E6; color: #9F1239; box-shadow: 0 2px 8px rgba(217,48,37,0.15); }
+.chip.purple.sel { background: #EDE9FE; color: #5B21B6; box-shadow: 0 2px 8px rgba(139,92,246,0.15); }
+.chip.gray.sel   { background: var(--surface-3); color: var(--text-sec); }
+.chip.red.sel    { background: #FFE4E6; color: #9F1239; box-shadow: 0 2px 8px rgba(217,48,37,0.15); }
+
+.chip.other { border-style: dashed; }
+
+/* ═══════════════════════════════════════════════════
+   RECORD FLOW — Step 0 (Start)
+═══════════════════════════════════════════════════ */
+.start-hero {
+  margin: 8px 0 24px;
+  padding: 28px 24px;
+  background: linear-gradient(135deg, #2F7A52 0%, #235E3E 100%);
+  border-radius: var(--r-xl);
+  color: #fff;
+  position: relative; overflow: hidden;
+  box-shadow: var(--shadow-brand);
+}
+.start-hero::before {
+  content: '🏸';
+  position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+  font-size: 72px; opacity: 0.15;
+  pointer-events: none;
+}
+.start-hero h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.start-hero p  { font-size: 13px; opacity: 0.82; line-height: 1.5; }
+
+/* ═══════════════════════════════════════════════════
+   RECORD FLOW — Step 1 (Questions)
+═══════════════════════════════════════════════════ */
+.progress-track {
+  display: flex; gap: 3px; margin-bottom: 20px;
+}
+.prog-seg {
+  flex: 1; height: 3px; border-radius: 2px;
+  background: var(--border-soft);
+  transition: background var(--dur-med);
+}
+.prog-seg.done { background: var(--brand); }
+
+.jump-nav { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+.jump-dot {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 1.5px solid var(--border-soft);
+  background: var(--surface);
+  font-size: 11px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text-tert);
+  flex-shrink: 0;
+  transition: all var(--dur-fast) var(--ease-spring);
+}
+.jump-dot:active { transform: scale(0.9); }
+.jump-dot.done { background: var(--brand); color: #fff; border-color: var(--brand); }
+.jump-dot.current { border-color: var(--brand); color: var(--brand); font-weight: 700; box-shadow: 0 0 0 3px var(--brand-glow); }
+.jump-dot.has-note { position: relative; }
+.jump-dot.has-note::after {
+  content: '';
+  position: absolute; top: -3px; right: -3px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #8B5CF6;
+  border: 2px solid var(--bg);
+}
+
+.q-card {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-lg);
+  padding: 22px 20px 20px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+}
+.q-header { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 18px; }
+.q-num {
+  width: 32px; height: 32px; border-radius: var(--r-md);
+  background: var(--brand);
+  color: #fff; font-size: 13px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-brand);
+}
+.q-title { font-size: 16px; font-weight: 700; line-height: 1.4; color: var(--text); }
+.q-sub   { font-size: 12px; color: var(--text-tert); margin-top: 3px; }
+
+.note-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--text-tert);
+  margin-top: 16px; cursor: pointer;
+  border: none; background: none; padding: 6px 0;
+  font-family: var(--font); font-weight: 500;
+  transition: color var(--dur-fast);
+}
+.note-toggle.has-note { color: #7C3AED; font-weight: 600; }
+.note-box { margin-top: 10px; display: none; }
+.note-box.open { display: block; }
+.note-box textarea { font-size: 14px; min-height: 60px; }
+
+.other-input { margin-top: 10px; display: none; }
+.other-input.open { display: block; }
+
+.hint-text { font-size: 12px; color: var(--text-tert); margin-top: 8px; }
+
+/* ═══════════════════════════════════════════════════
+   RESULT STEP
+═══════════════════════════════════════════════════ */
+.result-hero {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 20px;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, #2F7A52, #235E3E);
+  border-radius: var(--r-lg);
+  color: #fff;
+  box-shadow: var(--shadow-brand);
+}
+.result-hero-icon {
+  width: 44px; height: 44px; border-radius: var(--r-md);
+  background: rgba(255,255,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; flex-shrink: 0;
+}
+.result-hero h3 { font-size: 18px; font-weight: 700; }
+.result-hero p  { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+
+.result-section { margin-bottom: 16px; }
+.result-label {
+  font-size: 11px; font-weight: 700;
+  color: var(--text-tert); letter-spacing: 0.08em;
+  text-transform: uppercase; margin-bottom: 8px;
+}
+.ai-chip {
+  display: inline-block; font-size: 12px; font-weight: 500;
+  padding: 5px 12px; border-radius: var(--r-full);
+  margin: 3px 3px 0 0;
+}
+.ai-chip.appearance { background: #DBEAFE; color: #1D4ED8; }
+.ai-chip.play       { background: #D1F5E4; color: #1A5E3A; }
+.ai-chip.behavior   { background: #FEF3C7; color: #92400E; }
+.ai-chip.vibe       { background: #EDE9FE; color: #5B21B6; }
+.ai-chip.bad        { background: #FFE4E6; color: #9F1239; }
+.ai-chip.note       { background: var(--surface-3); color: var(--text-sec); font-style: italic; }
+
+/* Invite grid */
+.invite-label { font-size: 13px; font-weight: 600; color: var(--text-sec); margin-top: 20px; margin-bottom: 10px; }
+.invite-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; }
+.inv-btn {
+  padding: 14px 8px; font-size: 13px; font-weight: 600;
+  border: 1.5px solid var(--border-soft);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text-sec);
+  cursor: pointer; font-family: var(--font);
+  text-align: center;
+  transition: all var(--dur-fast) var(--ease-spring);
+}
+.inv-btn:active { transform: scale(0.97); }
+.inv-btn.yes    { background: #D1F5E4; color: #1A5E3A; border-color: #2F7A52; }
+.inv-btn.no     { background: #FFE4E6; color: #9F1239; border-color: #D93025; }
+.inv-btn.maybe  { background: #FEF3C7; color: #92400E; border-color: #F59E0B; }
+
+/* ═══════════════════════════════════════════════════
+   PLAYER LIST
+═══════════════════════════════════════════════════ */
+.search-wrap { position: relative; margin-bottom: 16px; margin-top: 4px; }
+.search-icon {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  font-size: 15px; color: var(--text-tert); pointer-events: none;
+}
+.search-box {
+  width: 100%; padding: 12px 16px 12px 40px;
+  background: var(--surface);
+  border: 1.5px solid var(--border-soft);
+  border-radius: var(--r-full);
+  font-size: 14px; color: var(--text);
+  font-family: var(--font);
+  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+  outline: none;
+}
+.search-box:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-glow);
+}
+.search-box::placeholder { color: var(--text-tert); }
+
+.list-stats {
+  display: flex; gap: 8px; margin-bottom: 16px;
+}
+.stat-pill {
+  flex: 1; padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-md);
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+.stat-num { font-size: 22px; font-weight: 700; color: var(--brand); }
+.stat-label { font-size: 11px; color: var(--text-tert); margin-top: 2px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-lg);
+  padding: 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-fast) var(--ease-spring),
+              box-shadow var(--dur-fast),
+              border-color var(--dur-fast);
+}
+.card:active { transform: scale(0.985); box-shadow: var(--shadow-md); }
+.card.black  { border-color: rgba(239,68,68,0.3); background: var(--danger-soft); }
+
+.card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.avatar {
+  width: 46px; height: 46px; border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 15px; flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+.player-name { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+.player-meta { font-size: 12px; color: var(--text-tert); margin-top: 3px; }
+.invite-tag {
+  font-size: 11px; font-weight: 700;
+  padding: 4px 10px; border-radius: var(--r-full);
+  flex-shrink: 0;
+}
+.invite-tag.yes    { background: #D1F5E4; color: #1A5E3A; }
+.invite-tag.no     { background: #FFE4E6; color: #9F1239; }
+.invite-tag.maybe  { background: #FEF3C7; color: #92400E; }
+.invite-tag.black  { background: #FFE4E6; color: #9F1239; }
+
+.card-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.mini-chip {
+  font-size: 11px; padding: 3px 9px;
+  border-radius: var(--r-full);
+  background: var(--surface-3);
+  color: var(--text-sec);
+  font-weight: 500;
+}
+
+.empty {
+  text-align: center; padding: 4rem 1.5rem;
+  color: var(--text-tert); font-size: 14px; line-height: 1.7;
+}
+.empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+
+.section-divider { border: none; border-top: 1px solid var(--border-soft); margin: 16px 0; }
+
+.backup-row { display: flex; gap: 8px; margin-top: 4px; }
+.backup-row .btn { margin-top: 0; flex: 1; padding: 12px; font-size: 13px; }
+
+/* ═══════════════════════════════════════════════════
+   MODAL (Bottom Sheet)
+═══════════════════════════════════════════════════ */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0); z-index: 100;
+  align-items: flex-end; justify-content: center;
+  transition: background var(--dur-med);
+}
+.modal-overlay.open {
+  display: flex;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+}
+.modal {
+  background: var(--surface);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  padding: 0;
+  width: 100%; max-width: 480px;
+  max-height: 88vh; overflow: hidden;
+  display: flex; flex-direction: column;
+  transform: translateY(0);
+  box-shadow: var(--shadow-lg);
+}
+.modal-drag {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--border);
+  margin: 12px auto 0;
+  flex-shrink: 0;
+}
+.modal-scroll { overflow-y: auto; padding: 16px 20px calc(20px + env(safe-area-inset-bottom)); }
+.modal-name {
+  font-size: 20px; font-weight: 700; margin-bottom: 4px;
+  letter-spacing: -0.02em;
+}
+.modal-username { font-size: 13px; color: var(--text-tert); margin-bottom: 16px; }
+.detail-row {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  font-size: 13px; padding: 10px 0;
+  border-bottom: 1px solid var(--border-soft); gap: 12px;
+}
+.detail-row:last-child { border-bottom: none; }
+.dl { color: var(--text-tert); flex-shrink: 0; font-weight: 600; font-size: 12px; }
+.dv-wrap { display: flex; flex-wrap: wrap; gap: 3px; justify-content: flex-end; }
+.session-list { margin-top: 12px; }
+.session-card {
+  background: var(--surface-2);
+  border-radius: var(--r-md); padding: 10px 14px; margin-top: 6px;
+}
+.session-date { font-size: 12px; color: var(--text-sec); font-weight: 500; }
+.modal-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; }
+
+/* ═══════════════════════════════════════════════════
+   STEP COUNTER STRIP
+═══════════════════════════════════════════════════ */
+.nav-row {
+  display: flex; gap: 8px; margin-top: 16px;
+}
+.nav-row .btn { flex: 1; margin-top: 0; padding: 13px; }
+
+/* ═══════════════════════════════════════════════════
+   SAVE FEEDBACK
+═══════════════════════════════════════════════════ */
+.save-feedback {
+  text-align: center; font-size: 13px; font-weight: 600;
+  color: var(--brand); height: 20px; margin-top: 8px;
+  transition: opacity var(--dur-fast);
+}
+
+/* ═══════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════ */
+.toast {
+  position: fixed; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px);
+  left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--text);
+  color: var(--bg);
+  padding: 10px 20px;
+  border-radius: var(--r-full);
+  font-size: 13px; font-weight: 600;
+  opacity: 0;
+  transition: all var(--dur-med) var(--ease-spring);
+  pointer-events: none; z-index: 200;
+  white-space: nowrap;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ═══════════════════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════════════════ */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fade-up var(--dur-med) var(--ease-smooth) both; }
+.fade-up:nth-child(1){animation-delay:0.0s}
+.fade-up:nth-child(2){animation-delay:0.04s}
+.fade-up:nth-child(3){animation-delay:0.08s}
+.fade-up:nth-child(4){animation-delay:0.12s}
+.fade-up:nth-child(5){animation-delay:0.16s}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Header ── -->
+  <header class="appbar">
+    <div class="appbar-left">
+      <div class="appbar-logo">🏸</div>
+      <div>
+        <div class="appbar-title">球友記錄</div>
+        <div class="appbar-sub">打完球，花幾分鐘記一筆</div>
+      </div>
+    </div>
+    <div class="sync-pill">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-label">連線中</span>
+    </div>
+  </header>
+
+  <!-- ── Main Content ── -->
+  <main>
+
+    <!-- ══ 記錄 Tab ══ -->
+    <div id="pg-rec" class="section active">
+
+      <!-- Step 0: Start -->
+      <div id="step-0">
+        <div class="start-hero fade-up">
+          <h2>記錄新球友</h2>
+          <p>把這場的感受趁熱記下，下次邀約前你會感謝自己</p>
+        </div>
+
+        <div class="field-group fade-up">
+          <span class="field-label">Threads 帳號</span>
+          <input type="text" id="f-thread" placeholder="@username">
+        </div>
+
+        <div class="field-group fade-up">
+          <span class="field-label">場次類型</span>
+          <div class="chip-group">
+            <span class="chip teal" data-g="stype" data-v="1v1" onclick="pickChip(this)">⚡ 1小時 1對1</span>
+            <span class="chip teal" data-g="stype" data-v="2hr" onclick="pickChip(this)">🔥 2小時 2休1</span>
+          </div>
+        </div>
+
+        <button class="btn btn-primary fade-up" style="margin-top:24px;" onclick="goStep()">
+          開始記錄 →
+        </button>
+      </div>
+
+      <!-- Step 1: Questions -->
+      <div id="step-1" style="display:none;">
+        <div class="progress-track" id="prog"></div>
+        <div class="jump-nav" id="jump-nav"></div>
+
+        <div class="q-card">
+          <div class="q-header">
+            <div class="q-num" id="s-num">1</div>
+            <div>
+              <div class="q-title" id="s-title"></div>
+              <div class="q-sub"   id="s-sub"></div>
+            </div>
+          </div>
+          <div id="s-body"></div>
+          <button class="note-toggle" id="note-toggle" onclick="toggleNote()">
+            💭 想到細節，記一下
+          </button>
+          <div class="note-box" id="note-box">
+            <textarea id="note-text" placeholder="當下想到什麼就打什麼…" oninput="onNoteInput()"></textarea>
+          </div>
+        </div>
+
+        <div class="nav-row">
+          <button class="btn" onclick="prevQ()">← 上一題</button>
+          <button class="btn btn-primary" style="flex:2;" id="next-btn" onclick="nextQ()">下一題 →</button>
+        </div>
+      </div>
+
+      <!-- Step Result -->
+      <div id="step-result" style="display:none;">
+        <div class="result-hero">
+          <div class="result-hero-icon">✨</div>
+          <div>
+            <h3>整理完成！</h3>
+            <p>確認後儲存，也可以回去補充</p>
+          </div>
+        </div>
+        <div id="result-body"></div>
+        <div class="invite-label">下次想不想再邀？</div>
+        <div class="invite-grid" id="invite-grid"></div>
+        <button class="btn btn-primary" style="margin-top:16px;" onclick="savePlayer()">
+          💾 儲存到球友檔案
+        </button>
+        <div class="save-feedback" id="save-ok"></div>
+      </div>
+
+    </div>
+
+    <!-- ══ 球友 Tab ══ -->
+    <div id="pg-list" class="section">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-box" type="text" placeholder="搜尋帳號…" oninput="renderList(this.value)">
+      </div>
+      <div class="list-stats" id="list-stats"></div>
+      <div id="player-list"></div>
+      <hr class="section-divider">
+      <div class="backup-row">
+        <button class="btn" onclick="exportData()">⬇️ 匯出備份</button>
+        <button class="btn" onclick="document.getElementById('import-file').click()">⬆️ 匯入備份</button>
+      </div>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+    </div>
+
+  </main>
+
+  <!-- ── Bottom Navigation ── -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" id="nav-rec" onclick="goTab('rec','backward')">
+      <div class="nav-icon">📝</div>
+      <span>記錄</span>
+    </button>
+    <button class="nav-item" id="nav-list" onclick="goTab('list','forward')">
+      <div class="nav-icon">👥</div>
+      <span>球友</span>
+      <div class="nav-badge" id="cnt">0</div>
+    </button>
+  </nav>
+</div>
+
+<!-- ── Modal (Bottom Sheet) ── -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-drag"></div>
+    <div class="modal-scroll">
+      <div class="modal-name" id="m-name"></div>
+      <div class="modal-username" id="m-username"></div>
+      <div id="m-body"></div>
+      <div class="result-label" style="margin-top:16px;">歷史場次</div>
+      <div class="session-list" id="m-sessions"></div>
+      <div class="modal-actions">
+        <button class="btn" id="m-black-btn" onclick="toggleBlack()"></button>
+        <button class="btn btn-danger" onclick="delPlayer()">🗑 刪除此球友</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Firebase Setup ──────────────────────────────────────────────────────
+const firebaseConfig={
+  apiKey:'AIzaSyBzje3ppYRqZP1l1ZPrRIrIw8ybhfRxfAI',
+  authDomain:'badminton-tracker-a8894.firebaseapp.com',
+  projectId:'badminton-tracker-a8894',
+  storageBucket:'badminton-tracker-a8894.firebasestorage.app',
+  messagingSenderId:'681212964304',
+  appId:'1:681212964304:web:589f64eaf075206edb1dd5'
+};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.firestore();
+const playersRef=db.collection('players');
+db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+
+// ── Sync UI ─────────────────────────────────────────────────────────────
+function setSyncDot(s){
+  const d=document.getElementById('sync-dot');
+  const l=document.getElementById('sync-label');
+  if(!d)return;
+  d.className='sync-dot '+s;
+  if(l){const map={synced:'已同步',syncing:'同步中…',error:'離線'};l.textContent=map[s]||'';}
+}
+
+// ── Toast ───────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ── Local Cache ─────────────────────────────────────────────────────────
+const STORAGE_KEY='badminton_buddy_records_v1';
+let players=[];
+try{players=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){players=[];}
+
+// ── Firestore Real-time Listener ────────────────────────────────────────
+playersRef.onSnapshot(snap=>{
+  players=snap.docs.map(d=>d.data());
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(players));}catch(e){}
+  document.getElementById('cnt').textContent=players.length;
+  const sq=document.querySelector('.search-box');
+  if(document.getElementById('pg-list').classList.contains('active'))renderList(sq?sq.value:'');
+  renderListStats();
+  setSyncDot('synced');
+},err=>{
+  console.warn('Sync:',err);
+  setSyncDot('error');
+});
+
+// ── Firestore Write Helpers ─────────────────────────────────────────────
+function persist(){document.getElementById('cnt').textContent=players.length;}
+async function fsSet(player){
+  setSyncDot('syncing');
+  try{await playersRef.doc(player.thread).set(player);setSyncDot('synced');}
+  catch(e){console.warn(e);setSyncDot('error');try{localStorage.setItem(STORAGE_KEY,JSON.stringify(players));}catch(e2){}}
+}
+async function fsDel(thread){
+  setSyncDot('syncing');
+  try{await playersRef.doc(thread).delete();setSyncDot('synced');}
+  catch(e){console.warn(e);setSyncDot('error');}
+}
+
+// ── Colors & Initials ───────────────────────────────────────────────────
+const COLORS=[
+  ['#10B981','#D1FAE5'],['#3B82F6','#DBEAFE'],['#8B5CF6','#EDE9FE'],
+  ['#F59E0B','#FEF3C7'],['#EF4444','#FFE4E6'],['#EC4899','#FCE7F3']
+];
+function colorFor(s){let h=0;for(let c of(s||''))h+=c.charCodeAt(0);return COLORS[h%COLORS.length];}
+function initials(s){return(s||'?').replace(/^@/,'').slice(0,2).toUpperCase();}
+
+// ── Questions Data ──────────────────────────────────────────────────────
+const Qs=[
+  {id:'arrive',title:'他幾點到？',sub:'比你早、差不多、還是遲到？',type:'chip',
+   opts:[{v:'super_early',l:'超早到，你還沒準備好',c:'amber'},{v:'early',l:'比你早一點',c:'teal'},{v:'same',l:'差不多同時',c:'blue'},{v:'late',l:'遲到',c:'coral'}]},
+  {id:'wait_doing',title:'等待時他在幹嘛？',sub:'你還在準備時，他是什麼狀態',type:'multi',
+   opts:[{v:'warmup_hard',l:'瘋狂熱身跑步',c:'teal'},{v:'warmup_light',l:'隨便動一動',c:'blue'},{v:'phone',l:'滑手機',c:'gray'},{v:'watch_you',l:'觀察你',c:'amber'},{v:'chat_init',l:'主動找你聊',c:'purple'},{v:'quiet',l:'安靜坐著',c:'gray'}]},
+  {id:'first_feel',title:'第一眼看到他，心裡有什麼感覺？',sub:'直覺就好，不用解釋',type:'chip',
+   opts:[{v:'positive',l:'還不錯，看起來可以打',c:'teal'},{v:'neutral',l:'沒什麼感覺',c:'gray'},{v:'slight_worry',l:'有一點點擔心',c:'amber'},{v:'hope_not',l:'希望不要是他',c:'coral'},{v:'nervous',l:'有點緊張',c:'purple'}]},
+  {id:'serve',title:'他怎麼發球？',sub:'單打發球習慣',type:'chip',
+   opts:[{v:'backhand_short',l:'反手小球（雙打習慣）',c:'amber'},{v:'underhand_long',l:'下手長球到底線',c:'teal'},{v:'underhand_short',l:'下手長球但不到位',c:'coral'},{v:'mix',l:'混合，看狀況',c:'blue'},{v:'unknown',l:'沒特別注意',c:'gray'}]},
+  {id:'playstyle',title:'他的球風是什麼感覺？',sub:'可以複選',type:'multi',
+   opts:[{v:'kill_strong',l:'殺球有力有速度',c:'coral'},{v:'kill_weak',l:'殺球不尖不快',c:'gray'},{v:'kill_never',l:'死都不殺球',c:'amber'},{v:'lift_deep',l:'愛把球打深',c:'teal'},{v:'drop_shot',l:'愛放小球',c:'blue'},{v:'baseline',l:'愛壓我底線',c:'coral'},{v:'net_rush',l:'愛搶網前',c:'purple'},{v:'rally',l:'愛拉鋸耗體力',c:'amber'},{v:'no_single',l:'單打觀念不足',c:'gray'}]},
+  {id:'stamina',title:'他的體力怎麼樣？',sub:'後半段有沒有掉速',type:'chip',
+   opts:[{v:'strong_end',l:'越打越猛',c:'teal'},{v:'stable',l:'始終穩定',c:'blue'},{v:'drop_later',l:'後半段開始拖步伐',c:'amber'},{v:'drop_early',l:'很快就喘了',c:'coral'},{v:'unknown',l:'沒特別注意',c:'gray'}]},
+  {id:'winrate',title:'今天輸贏大概怎麼樣？',sub:'你自己的感覺',type:'chip',
+   opts:[{v:'i_crush',l:'我一面倒贏',c:'teal'},{v:'i_lead',l:'我贏多輸少',c:'blue'},{v:'even',l:'五五波很膠著',c:'purple'},{v:'i_lose',l:'我輸多一點',c:'amber'},{v:'he_crush',l:'他一面倒贏我',c:'coral'}]},
+  {id:'oncourt',title:'場上他的態度？',sub:'可以複選',type:'multi',
+   opts:[{v:'quiet_focus',l:'安靜專注',c:'teal'},{v:'friendly_chat',l:'偶爾說說話',c:'blue'},{v:'teach_mode',l:'愛指導或講解',c:'amber'},{v:'bigbro',l:'老大哥姿態',c:'coral'},{v:'trash_talk',l:'愛說風涼話',c:'red'},{v:'angry_lose',l:'輸了會不爽',c:'red'},{v:'laugh',l:'愛開玩笑',c:'purple'},{v:'pickup',l:'主動撿球',c:'teal'},{v:'score',l:'幫忙記分',c:'blue'}]},
+  {id:'rest',title:'中場休息他在幹嘛？',sub:'組間休息的時候，可複選',type:'multi',
+   opts:[{v:'rush_continue',l:'馬上要繼續打',c:'amber'},{v:'phone_rest',l:'滑手機不說話',c:'gray'},{v:'chat_you',l:'找你聊天',c:'blue'},{v:'ask_badminton',l:'問羽球相關問題',c:'purple'},{v:'ask_personal',l:'問你個人問題',c:'coral'},{v:'stretch',l:'自己在伸展',c:'teal'},{v:'normal',l:'正常休息沒特別',c:'gray'}]},
+  {id:'after',title:'打完球之後？',sub:'結束後的互動，可複選',type:'multi',
+   opts:[{v:'left_quick',l:'打完馬上走',c:'gray'},{v:'small_talk',l:'閒聊幾句才走',c:'blue'},{v:'long_talk',l:'聊了很久',c:'purple'},{v:'ask_next',l:'問你下次什麼時候開',c:'teal'},{v:'social_media',l:'加你社群',c:'amber'},{v:'no_interact',l:'完全沒互動',c:'gray'}]},
+  {id:'overall',title:'整體下來，打這場你爽不爽？',sub:'最直覺的感受',type:'chip',
+   opts:[{v:'very_good',l:'很爽！下次還想打',c:'teal'},{v:'ok',l:'還可以，普普',c:'blue'},{v:'meh',l:'有點無聊或悶',c:'gray'},{v:'tired',l:'很累但值得',c:'amber'},{v:'bad',l:'不太爽，浪費時間',c:'coral'},{v:'angry',l:'很不爽',c:'red'}]},
+];
+
+const CHIP_LABELS={
+  super_early:'超早到',early:'比你早',same:'差不多同時',late:'遲到',
+  warmup_hard:'瘋狂熱身',warmup_light:'隨便動動',phone:'滑手機',watch_you:'觀察你',chat_init:'主動找聊',quiet:'安靜坐著',
+  positive:'感覺不錯',neutral:'沒感覺',slight_worry:'有點擔心',hope_not:'希望不是他',nervous:'有點緊張',
+  backhand_short:'反手小球',underhand_long:'下手長球到底',underhand_short:'長球不到位',mix:'混合發球',unknown:'沒注意',
+  kill_strong:'殺球有力',kill_weak:'殺球不快',kill_never:'死都不殺',lift_deep:'愛打深',drop_shot:'愛放小球',baseline:'愛壓底線',net_rush:'愛搶網前',rally:'愛耗體力',no_single:'單打觀念弱',
+  strong_end:'越打越猛',stable:'體力穩定',drop_later:'後段拖步',drop_early:'很快就喘',
+  i_crush:'我一倒贏',i_lead:'我贏多',even:'五五波',i_lose:'我輸多',he_crush:'他一倒贏',
+  quiet_focus:'安靜專注',friendly_chat:'偶爾聊聊',teach_mode:'愛指導',bigbro:'老大哥',trash_talk:'說風涼話',angry_lose:'輸了不爽',laugh:'愛開玩笑',pickup:'主動撿球',score:'幫忙記分',
+  rush_continue:'馬上繼續',phone_rest:'滑手機',chat_you:'找你聊',ask_badminton:'問羽球問題',ask_personal:'問你私事',stretch:'自己伸展',normal:'正常休息',
+  left_quick:'打完馬上走',small_talk:'閒聊才走',long_talk:'聊很久',ask_next:'問下次場次',social_media:'加社群',no_interact:'沒互動',
+  very_good:'很爽想再打',ok:'普普',meh:'有點悶',tired:'累但值得',bad:'不太爽',angry:'很不爽',
+};
+const CLS={arrive:'behavior',wait_doing:'behavior',first_feel:'vibe',serve:'play',playstyle:'play',stamina:'play',winrate:'play',oncourt:'behavior',rest:'behavior',after:'behavior',overall:'vibe'};
+
+// ── State ───────────────────────────────────────────────────────────────
+let ans={}, notes={}, curQ=0, chosenInvite='';
+
+// ── Chip Selection ──────────────────────────────────────────────────────
+function pickChip(el){
+  const g=el.dataset.g;
+  if(g){document.querySelectorAll(`[data-g="${g}"]`).forEach(x=>x.classList.remove('sel'));}
+  el.classList.add('sel');
+}
+
+// ── Tab Navigation (with View Transitions) ──────────────────────────────
+let currentTab='rec';
+function goTab(t, direction='forward'){
+  if(t===currentTab)return;
+  const updateDOM=()=>{
+    document.getElementById('nav-rec').classList.toggle('active',t==='rec');
+    document.getElementById('nav-list').classList.toggle('active',t==='list');
+    document.getElementById('pg-rec').classList.toggle('active',t==='rec');
+    document.getElementById('pg-list').classList.toggle('active',t==='list');
+    if(t==='list'){renderList('');renderListStats();}
+    currentTab=t;
+    window.scrollTo(0,0);
+  };
+  if(!document.startViewTransition){updateDOM();return;}
+  document.startViewTransition({update:updateDOM,types:[direction]});
+}
+
+// ── Step 0 → 1 ──────────────────────────────────────────────────────────
+function goStep(){
+  const thread=document.getElementById('f-thread').value.trim().replace(/^@/,'');
+  if(!thread){showToast('請先填寫 Threads 帳號');return;}
+  ans={thread};notes={};
+  const st=document.querySelector('[data-g="stype"].sel');
+  ans.stype=st?st.dataset.v:'';
+  curQ=0;
+  document.getElementById('step-0').style.display='none';
+  document.getElementById('step-1').style.display='block';
+  renderQ();
+  window.scrollTo(0,0);
+}
+
+// ── Jump Nav ────────────────────────────────────────────────────────────
+function renderJumpNav(){
+  document.getElementById('jump-nav').innerHTML=Qs.map((q,i)=>{
+    let cls='jump-dot';
+    if(i===curQ)cls+=' current';
+    else if(i<curQ||(ans[q.id]!==undefined&&ans[q.id]!==''))cls+=' done';
+    if(notes[q.id])cls+=' has-note';
+    return `<button class="${cls}" onclick="jumpTo(${i})" aria-label="題目${i+1}">${i+1}</button>`;
+  }).join('');
+}
+
+function jumpTo(i){saveCurrentNote();curQ=i;renderQ();}
+
+// ── Render Question ──────────────────────────────────────────────────────
+function renderQ(){
+  const q=Qs[curQ];
+  const total=Qs.length;
+  document.getElementById('prog').innerHTML=Qs.map((_,i)=>`<div class="prog-seg${i<=curQ?' done':''}"></div>`).join('');
+  renderJumpNav();
+  document.getElementById('s-num').textContent=curQ+1;
+  document.getElementById('s-title').textContent=q.title;
+  document.getElementById('s-sub').textContent=q.sub||'';
+  document.getElementById('next-btn').textContent=curQ===total-1?'完成，整理結果 ✓':'下一題 →';
+
+  const saved=ans[q.id]||[];
+  const savedArr=Array.isArray(saved)?saved:[saved];
+  let html=`<div class="chip-group">${q.opts.map(o=>`<span class="chip ${o.c}${savedArr.includes(o.v)?' sel':''}" data-q="${q.id}" data-v="${o.v}" data-multi="${q.type==='multi'}" onclick="pickAns(this)">${o.l}</span>`).join('')}`;
+  html+=`<span class="chip other gray${ans[q.id+'_other']!==undefined?' sel':''}" data-q="${q.id}" onclick="toggleOther(this)">✏️ 自己寫</span></div>`;
+  if(q.type==='multi')html+=`<p class="hint-text">可複選，沒有就直接跳過</p>`;
+  html+=`<div class="other-input${ans[q.id+'_other']!==undefined?' open':''}" id="other-box"><input type="text" id="other-text" placeholder="輸入你的描述…" value="${(ans[q.id+'_other']||'').replace(/"/g,'&quot;')}" oninput="ans['${q.id}_other']=this.value"/></div>`;
+  document.getElementById('s-body').innerHTML=html;
+
+  const nt=document.getElementById('note-toggle');
+  const nb=document.getElementById('note-box');
+  document.getElementById('note-text').value=notes[q.id]||'';
+  if(notes[q.id]){nb.classList.add('open');nt.classList.add('has-note');nt.textContent='💭 細節已記錄（點擊編輯）';}
+  else{nb.classList.remove('open');nt.classList.remove('has-note');nt.textContent='💭 想到細節，記一下';}
+}
+
+function toggleOther(el){
+  const q=el.dataset.q;
+  if(ans[q+'_other']!==undefined){delete ans[q+'_other'];renderQ();}
+  else{ans[q+'_other']='';renderQ();setTimeout(()=>document.getElementById('other-text')?.focus(),50);}
+}
+
+function pickAns(el){
+  const q=el.dataset.q, v=el.dataset.v, multi=el.dataset.multi==='true';
+  if(multi){
+    let cur=ans[q]||[];
+    if(!Array.isArray(cur))cur=[cur];
+    const i=cur.indexOf(v);
+    if(i>-1)cur.splice(i,1); else cur.push(v);
+    ans[q]=cur;
+    document.querySelectorAll(`[data-q="${q}"][data-v]`).forEach(x=>x.classList.toggle('sel',cur.includes(x.dataset.v)));
+  }else{
+    ans[q]=v;
+    document.querySelectorAll(`[data-q="${q}"][data-v]`).forEach(x=>x.classList.toggle('sel',x.dataset.v===v));
+  }
+  renderJumpNav();
+}
+
+function toggleNote(){
+  const b=document.getElementById('note-box');
+  b.classList.toggle('open');
+  if(b.classList.contains('open'))document.getElementById('note-text').focus();
+}
+
+function onNoteInput(){
+  const q=Qs[curQ]; const val=document.getElementById('note-text').value;
+  const t=document.getElementById('note-toggle');
+  if(val.trim()){notes[q.id]=val;t.classList.add('has-note');t.textContent='💭 細節已記錄（點擊編輯）';}
+  else{delete notes[q.id];t.classList.remove('has-note');t.textContent='💭 想到細節，記一下';}
+  renderJumpNav();
+}
+
+function saveCurrentNote(){
+  const q=Qs[curQ];
+  const val=document.getElementById('note-text')?.value;
+  if(val&&val.trim())notes[q.id]=val.trim(); else delete notes[q.id];
+}
+
+function nextQ(){
+  saveCurrentNote();
+  if(curQ===Qs.length-1){showResult();return;}
+  curQ++;renderQ();window.scrollTo(0,0);
+}
+
+function prevQ(){
+  saveCurrentNote();
+  if(curQ===0){
+    document.getElementById('step-0').style.display='block';
+    document.getElementById('step-1').style.display='none';
+    return;
+  }
+  curQ--;renderQ();window.scrollTo(0,0);
+}
+
+// ── Show Result ──────────────────────────────────────────────────────────
+function showResult(){
+  document.getElementById('step-1').style.display='none';
+  document.getElementById('step-result').style.display='block';
+  window.scrollTo(0,0);
+
+  const groups=buildGroups();
+  const secMap={appearance:{label:'外貌 / 第一印象',cls:'appearance'},play:{label:'球風分析',cls:'play'},behavior:{label:'行為觀察',cls:'behavior'},vibe:{label:'整體感受',cls:'vibe'}};
+  let html='';
+  Object.keys(secMap).forEach(k=>{
+    const items=groups[k]; if(!items?.length)return;
+    html+=`<div class="result-section"><div class="result-label">${secMap[k].label}</div><div>${items.map(t=>{const isNote=t.startsWith('💭 ');return`<span class="ai-chip ${isNote?'note':secMap[k].cls}">${escapeHtml(t)}</span>`;}).join('')}</div></div>`;
+  });
+  document.getElementById('result-body').innerHTML=html||'<p style="font-size:13px;color:var(--text-tert);">回答太少了，沒什麼可以整理的</p>';
+
+  const overall=ans.overall;
+  let suggested='maybe';
+  if(overall==='very_good'||overall==='tired')suggested='yes';
+  else if(overall==='bad'||overall==='angry')suggested='no';
+  chosenInvite=suggested;renderInvite();
+}
+
+function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function renderInvite(){
+  const opts=[{v:'yes',l:'✅ 下次再邀'},{v:'maybe',l:'🤔 看狀況'},{v:'no',l:'❌ 不想再邀'},{v:'black',l:'🚫 黑名單'}];
+  document.getElementById('invite-grid').innerHTML=opts.map(o=>`<button class="inv-btn${chosenInvite===o.v?' '+(o.v==='yes'?'yes':(o.v==='no'||o.v==='black')?'no':'maybe'):''}\" onclick="setInvite('${o.v}')">${o.l}</button>`).join('');
+}
+
+function setInvite(v){chosenInvite=v;renderInvite();}
+
+// ── Save Player ──────────────────────────────────────────────────────────
+async function savePlayer(){
+  const thread=ans.thread;
+  const session={date:new Date().toLocaleDateString('zh-TW'),stype:ans.stype,ans:{...ans},notes:{...notes},invite:chosenInvite,groups:buildGroups()};
+  let p=players.find(x=>x.thread===thread);
+  if(p){p.sessions=p.sessions||[];p.sessions.unshift(session);p.lastInvite=chosenInvite;p.black=chosenInvite==='black';}
+  else{p={id:Date.now(),thread,sessions:[session],lastInvite:chosenInvite,black:chosenInvite==='black'};players.unshift(p);}
+  await fsSet(p);
+  document.getElementById('save-ok').textContent='✓ 已儲存！';
+  showToast('✅ 球友記錄已儲存');
+  setTimeout(()=>{resetAll();goTab('list','forward');},900);
+}
+
+function buildGroups(){
+  const groups={appearance:[],play:[],behavior:[],vibe:[]};
+  Qs.forEach(q=>{
+    const cls=CLS[q.id]||'behavior'; const val=ans[q.id];
+    if(val!==undefined&&val!=='unknown'&&val!=='normal'){
+      const arr=Array.isArray(val)?val:[val];
+      arr.forEach(v=>{if(v==='unknown'||v==='normal')return;const lbl=CHIP_LABELS[v]||v;if(lbl)groups[cls].push(lbl);});
+    }
+    if(ans[q.id+'_other'])groups[cls].push(ans[q.id+'_other']);
+    if(notes[q.id])groups[cls].push('💭 '+notes[q.id]);
+  });
+  return groups;
+}
+
+function resetAll(){
+  ans={};notes={};curQ=0;chosenInvite='';
+  document.getElementById('f-thread').value='';
+  document.querySelectorAll('[data-g="stype"]').forEach(x=>x.classList.remove('sel'));
+  document.getElementById('step-result').style.display='none';
+  document.getElementById('step-0').style.display='block';
+  document.getElementById('save-ok').textContent='';
+}
+
+// ── Stats ────────────────────────────────────────────────────────────────
+function renderListStats(){
+  const el=document.getElementById('list-stats'); if(!el)return;
+  const total=players.length;
+  const yes=players.filter(p=>p.lastInvite==='yes').length;
+  const no=players.filter(p=>p.black||p.lastInvite==='no'||p.lastInvite==='black').length;
+  el.innerHTML=`
+    <div class="stat-pill"><div class="stat-num">${total}</div><div class="stat-label">總球友</div></div>
+    <div class="stat-pill"><div class="stat-num" style="color:#10B981">${yes}</div><div class="stat-label">想再邀</div></div>
+    <div class="stat-pill"><div class="stat-num" style="color:#EF4444">${no}</div><div class="stat-label">不想邀</div></div>
+  `;
+}
+
+// ── Player List ──────────────────────────────────────────────────────────
+function renderList(q){
+  const el=document.getElementById('player-list');
+  const list=players.filter(p=>!q||p.thread.toLowerCase().includes(q.toLowerCase()));
+  if(!list.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">🏸</div>${q?'沒有符合的球友':'還沒有球友記錄<br>打完球記第一筆試試看！'}</div>`;
+    return;
+  }
+  el.innerHTML=list.map((p,i)=>{
+    const last=p.sessions?.[0];
+    const g=last?.groups||{};
+    const chips=[...(g.appearance||[]).slice(0,1),...(g.play||[]).slice(0,1),...(g.behavior||[]).slice(0,1)].filter(t=>!t.startsWith('💭'));
+    const invLabel={yes:'✅ 再邀',no:'❌ 不邀',maybe:'🤔 看狀況',black:'🚫 黑名單'}[p.lastInvite]||'';
+    const invCls={yes:'yes',no:'no',maybe:'maybe',black:'black'}[p.lastInvite]||'';
+    const [fg,bg]=colorFor(p.thread);
+    return`<div class="card${p.black?' black':''} fade-up" onclick="openModal(${p.id})" style="animation-delay:${i*0.04}s">
+      <div class="card-header">
+        <div class="avatar" style="background:${bg};color:${fg}">${initials(p.thread)}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="player-name">@${escapeHtml(p.thread)}</div>
+          <div class="player-meta">${p.sessions?.length||0} 次記錄 · ${last?.date||'未記錄'}</div>
+        </div>
+        ${invLabel?`<span class="invite-tag ${invCls}">${invLabel}</span>`:''}
+      </div>
+      ${chips.length?`<div class="card-chips">${chips.map(t=>`<span class="mini-chip">${escapeHtml(t)}</span>`).join('')}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ── Modal ────────────────────────────────────────────────────────────────
+let viewId=null;
+function openModal(id){
+  viewId=id;
+  const p=players.find(x=>x.id===id);if(!p)return;
+  const [fg,bg]=colorFor(p.thread);
+  document.getElementById('m-name').innerHTML=`<span style="background:${bg};color:${fg};padding:2px 10px;border-radius:8px;margin-right:8px;">${initials(p.thread)}</span>${p.black?'🚫 ':''}<span style="color:${fg}">@${escapeHtml(p.thread)}</span>`;
+  document.getElementById('m-username').textContent=`${p.sessions?.length||0} 次對戰記錄`;
+  document.getElementById('m-black-btn').textContent=p.black?'✅ 移出黑名單':'🚫 加入黑名單';
+
+  const last=p.sessions?.[0];
+  const g=last?.groups||{};
+  const secMap={appearance:'外貌',play:'球風',behavior:'行為',vibe:'感覺'};
+  let body='';
+  Object.keys(secMap).forEach(k=>{
+    if(g[k]?.length)body+=`<div class="detail-row"><span class="dl">${secMap[k]}</span><div class="dv-wrap">${g[k].map(t=>{const isNote=t.startsWith('💭 ');return`<span class="ai-chip ${isNote?'note':k}">${escapeHtml(t)}</span>`;}).join('')}</div></div>`;
+  });
+  document.getElementById('m-body').innerHTML=body||'<p style="font-size:13px;color:var(--text-tert)">無資料</p>';
+  document.getElementById('m-sessions').innerHTML=(p.sessions||[]).map(s=>`<div class="session-card"><div class="session-date">${s.date}${s.stype?' · '+(s.stype==='1v1'?'1對1':'2休1'):''} · ${{yes:'✅ 再邀',no:'❌ 不邀',maybe:'🤔 看狀況',black:'🚫 黑名單'}[s.invite]||'未評'}</div></div>`).join('');
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal(e){if(e.target===document.getElementById('modal-overlay'))document.getElementById('modal-overlay').classList.remove('open');}
+
+async function toggleBlack(){
+  const p=players.find(x=>x.id===viewId);if(!p)return;
+  p.black=!p.black;p.lastInvite=p.black?'black':'maybe';
+  await fsSet(p);
+  document.getElementById('modal-overlay').classList.remove('open');
+  showToast(p.black?'🚫 已加入黑名單':'✅ 已移出黑名單');
+}
+
+async function delPlayer(){
+  if(!confirm('確定要刪除這位球友？'))return;
+  const p=players.find(x=>x.id===viewId);if(!p)return;
+  players=players.filter(x=>x.id!==viewId);
+  await fsDel(p.thread);
+  document.getElementById('modal-overlay').classList.remove('open');
+  showToast('🗑 已刪除球友記錄');
+}
+
+// ── Import / Export ──────────────────────────────────────────────────────
+function exportData(){
+  const blob=new Blob([JSON.stringify(players,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const ts=new Date().toISOString().slice(0,10);
+  a.href=url;a.download=`球友記錄備份_${ts}.json`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('⬇️ 備份已下載');
+}
+
+function importData(e){
+  const file=e.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async function(ev){
+    try{
+      const imported=JSON.parse(ev.target.result);
+      if(!Array.isArray(imported))throw new Error('格式錯誤');
+      const mode=confirm('要「合併」匯入的資料嗎？\n\n確定＝合併（保留現有＋加入新的）\n取消＝取代（清空現有，改用匯入的）');
+      setSyncDot('syncing');
+      if(mode){
+        for(const ip of imported){
+          const exist=players.find(x=>x.thread===ip.thread);
+          if(exist){exist.sessions=[...(ip.sessions||[]),...(exist.sessions||[])];exist.lastInvite=ip.lastInvite;exist.black=ip.black;await fsSet(exist);}
+          else{players.push(ip);await fsSet(ip);}
+        }
+      }else{
+        for(const p of players){await fsDel(p.thread);}
+        players=imported;
+        for(const p of players){await fsSet(p);}
+      }
+      setSyncDot('synced');
+      showToast('✅ 匯入完成！共 '+players.length+' 位球友');
+    }catch(err){showToast('❌ 匯入失敗，格式不正確');}
+    e.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────
+persist();
+renderList('');
+renderListStats();
+</script>
+</body>
+</html>

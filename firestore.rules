@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 球友記錄：任何人都可以讀寫（共用模式，無需登入）
+    match /players/{thread} {
+      allow read, write: if true;
+    }
+  }
+}
